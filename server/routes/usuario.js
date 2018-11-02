@@ -1,5 +1,6 @@
 const express = require('express');
 const Usuario = require('../models/usuario'); //Exporto los modelos de usuario creado en models/usuario
+const { verificaToken, verificaAdminRole } = require('../middlewares/autenticacion');
 const app = express();
 const bcrypt = require('bcrypt');
 const _ = require('underscore');
@@ -8,7 +9,8 @@ const _ = require('underscore');
 
 
 
-app.get('/usuario', function(req, res) {
+app.get('/usuario', verificaToken, (req, res) => {
+
 
     let desde = req.query.desde || 0; //recibo una variable desde la url: {{url}}/usuario?desde=1
     desde = Number(desde);
@@ -47,7 +49,9 @@ app.get('/usuario', function(req, res) {
 
 
 
-app.post('/usuario', function(req, res) {
+app.post('/usuario', [verificaToken, verificaAdminRole], (req, res) => {
+
+
     let body = req.body; //extraigo la informacion desde x-www-form-urlencoded
 
 
@@ -77,11 +81,11 @@ app.post('/usuario', function(req, res) {
 
 
 });
-app.put('/usuario/:id', function(req, res) {
+app.put('/usuario/:id', [verificaToken, verificaAdminRole], (req, res) => {
     let id = req.params.id;
     let body = _.pick(req.body, ['nombre', 'email', 'img', 'role', 'estado']); //la funcion pick proveniente del underscore, selecciona los atributos que se pueden modificar
 
-    Usuario.findByIdAndUpdate(id, body, { new: true, runValidators: true }, (err, usuarioDB) => { //new retorna el valor modificado, runValitors, es para correr las reglas del Schema
+    Usuario.findByIdAndUpdate(id, body, { new: true, runValidators: true }, (err, usuarioBorrado) => { //new retorna el valor modificado, runValitors, es para correr las reglas del Schema
         if (err) {
             return res.status(400).json({
                 ok: false,
@@ -98,7 +102,7 @@ app.put('/usuario/:id', function(req, res) {
         }
         res.json({
             ok: true,
-            usuario: usuarioDB
+            usuario: usuarioBorrado
 
         });
 
@@ -108,7 +112,7 @@ app.put('/usuario/:id', function(req, res) {
 
 
 });
-app.delete('/usuario/:id', function(req, res) {
+app.delete('/usuario/:id', [verificaToken, verificaAdminRole], function(req, res) {
 
     let id = req.params.id;
 
